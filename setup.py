@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 INSTALL_REQUIREMENTS = [
       "numpy==1.16.3",
-      "tensorflow==1.13.1",
+      "tensorflow==1.15.2",
       "gym==0.17.1",
       "jupyter==1.0.0"
 ]
