@@ -7,7 +7,7 @@ INSTALL_REQUIREMENTS = [
       "jupyter==1.0.0"
 ]
 
-setup(name="rl_algorithms",
+setup(name="rl_agents",
       python_requires=">3.5",
       packages=find_packages(exclude=("tests", "tests.*")),
       include_package_data=True,
