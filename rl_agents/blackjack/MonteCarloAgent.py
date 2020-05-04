@@ -27,20 +27,63 @@ class MonteCarloAgent(IBaseAgent):
             the dealer's one showing card (1-10 where 1 is ace),
             and whether or not the player holds a usable ace (0 or 1))
         """
+        self.actions = np.arange(action_space.n)
         self.policy = np.zeros(shape=(obs_space[0].n,  # Player's score
                                       obs_space[1].n,  # Dealers's Card
                                       obs_space[2].n),  # has_usable_ace
                                dtype=int)
+
+        # To speed up training, I will apply some domain knowledge and
+        # initialize the policy to STAY if the player's score is 20 or 21.
+        for i in range(20, 22):
+            self.policy[i] = np.ones(shape=(
+                obs_space[1].n,  # Dealers's Card
+                obs_space[2].n),  # has_usable_ace
+            )
+
         self.action_values = np.zeros(shape=(obs_space[0].n,  # Player's score
                                              obs_space[1].n,  # Dealers's Card
                                              obs_space[2].n,  # has_usable_ace
-                                             action_space.n),  # {HIT, STAY}
+                                             action_space.n),  # {STAY, HIT}
                                       dtype=float)
         self.rewards = np.zeros(shape=(obs_space[0].n,  # Player's score
                                        obs_space[1].n,  # Dealers's Card
                                        obs_space[2].n,  # has_usable_ace
-                                       action_space.n),  # {HIT, STAY}
+                                       action_space.n),  # {STAY, HIT}
                                 dtype=float)
+
+    def bool2int(self,
+                 boolean: bool) -> int:
+        """Converts boolean to an integer value (0 or 1).
+
+        Args:
+            boolean: Boolean variable
+
+        Returns:
+            Integer representing the boolean
+        """
+        if boolean:
+            return 1
+        else:
+            return 0
+
+    def _select_action(self,
+                       score: int,
+                       dealer_card: int,
+                       has_usable_ace: int) -> int:
+        """Select action according to agent's policy.
+
+        Args:
+            score: Current sum of all cards in player's hand
+            dealer_card: Value of card shown by the dealer
+            has_usable_ace: Whether of not the player holds a usable ace (0
+            or 1)
+
+        Returns:
+
+        """
+
+        return self.policy[score, dealer_card, has_usable_ace]
 
     def agent_start(self,
                     observation: Tuple[Any]) -> int:
@@ -66,7 +109,9 @@ class MonteCarloAgent(IBaseAgent):
         Returns:
             The action the agent is taking.
         """
-        pass
+        return self._select_action(score=observation[0],
+                                   dealer_card=observation[1],
+                                   has_usable_ace=bool2int(observation[2])))
 
     def agent_end(self,
                   reward: float) -> None:
