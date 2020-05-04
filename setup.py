@@ -4,7 +4,9 @@ INSTALL_REQUIREMENTS = [
       "numpy==1.16.3",
       "tensorflow>=1.15.2",
       "gym==0.17.1",
-      "jupyter==1.0.0"
+      "jupyter==1.0.0",
+      "matplotlib==3.2.1",
+      "tqdm==4.46.0"
 ]
 
 setup(name="rl_agents",
