@@ -7,8 +7,8 @@ from rl_agents.abstract import IBaseAgent
 
 
 class MonteCarloAgent(IBaseAgent):
-    """Blackjack agent implementing the Monte Carlo with exploring starts
-    algorithm for control"""
+    """Blackjack agent implementing the "every-visit" Monte Carlo with exploring
+    starts algorithm for control,"""
 
     def __init__(self,
                  action_space: gym.spaces.Discrete,
@@ -20,8 +20,7 @@ class MonteCarloAgent(IBaseAgent):
         """Initializes the policy vector, state-action matrix, and returns
         matrix.
 
-        TODO: Optimize memory usage by updating the mean and counts for returns
-            incrementally, and using dictionaries for all data structures.
+        # TODO: Some states will never be reached, and can be removed.
 
         Args:
             action_space: Discrete action space (Hit or Stay).
@@ -35,13 +34,14 @@ class MonteCarloAgent(IBaseAgent):
         self.rand_generator = np.random.RandomState(seed=seed)
         self.actions = np.arange(action_space.n)
 
-        # To speed up training, I will apply some domain knowledge and
-        # initialize the policy to STAY if the player's score is 20 or 21,
-        # and HIT otherwise
         self.policy = np.ones(shape=(obs_space[0].n,  # Player's score
                                      obs_space[1].n,  # Dealers's Card
                                      obs_space[2].n),  # has_usable_ace
                               dtype=int)
+
+        # To speed up training, I will apply some domain knowledge and
+        # initialize the policy to STAY if the player's score is 20 or 21,
+        # and HIT otherwise
         for i in range(20, 22):
             self.policy[i] = np.zeros(shape=(
                 obs_space[1].n,  # Dealers's Card
@@ -54,11 +54,11 @@ class MonteCarloAgent(IBaseAgent):
                                              action_space.n),  # {STAY, HIT}
                                       dtype=float)
 
-        # TODO: This is pretty absurd... Refactor as soon as possible.
-        self.returns = [[[[[] for i in range(action_space.n)]  # {STAY, HIT}
-                         for i in range(obs_space[2].n)]  # has_usable_ace
-                         for i in range(obs_space[1].n)]  # Dealers's Card
-                        for i in range(obs_space[0].n)]  # Player's score
+        self.return_counts = np.zeros(shape=(obs_space[0].n,  # Player's score
+                                             obs_space[1].n,  # Dealers's Card
+                                             obs_space[2].n,  # has_usable_ace
+                                             action_space.n),  # {STAY, HIT}
+                                      dtype=float)
 
     @staticmethod
     def bool2int(boolean: bool) -> int:
@@ -77,12 +77,21 @@ class MonteCarloAgent(IBaseAgent):
 
     def _argmax(self,
                 vector: np.ndarray) -> int:
-        """Select the index containing the max value of the vector (with ties
-        broken arbitrarily)
+        """Returns the index containing the max value in the vector (with ties
+        broken arbitrarily).
+
+        Args:
+            vector: Vector to search
 
         Returns:
-            Integer representing the maximizing action
+            Index of the max value (ties broken arbitrarily)
         """
+        """Select the index containing the max value of the vector (with ties
+                broken arbitrarily).
+
+                Returns:
+                    Integer representing the maximizing action
+                """
         ties = []
         max_val = -np.inf
         for i in range(len(vector)):
@@ -165,25 +174,20 @@ class MonteCarloAgent(IBaseAgent):
             score, dealer_card, has_usable_ace = observation
             has_usable_ace = self.bool2int(has_usable_ace)
 
-            # Update discounted return_val
+            # Compute the discounted return
             return_val = (self.discount_factor * return_val) + reward
 
-            # Append to state-action returns list
-            self.returns[score][dealer_card][has_usable_ace][action].append(return_val)
+            # Update the return count
+            self.return_counts[score, dealer_card, has_usable_ace, action] += 1
 
-            self.action_values[
-                score,
-                dealer_card,
-                has_usable_ace,
-                action] = np.mean(self.returns[score][dealer_card][has_usable_ace][action])
+            # Update action - value estimate
+            count = self.return_counts[score, dealer_card, has_usable_ace, action]
+            old_estimate = self.action_values[score, dealer_card, has_usable_ace, action]
+            self.action_values[score, dealer_card, has_usable_ace, action] = \
+                old_estimate + (1/count)*(return_val - old_estimate)
 
-            self.policy[
-                score,
-                dealer_card,
-                has_usable_ace
-            ] = self._argmax(self.action_values[score,
-                                                dealer_card,
-                                                has_usable_ace])
+            self.policy[score, dealer_card, has_usable_ace] = \
+                self._argmax(self.action_values[score, dealer_card, has_usable_ace])
 
     def agent_cleanup(self) -> None:
         """Cleanup done after the agent ends."""
