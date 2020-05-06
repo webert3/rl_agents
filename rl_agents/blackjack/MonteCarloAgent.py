@@ -20,7 +20,9 @@ class MonteCarloAgent(IBaseAgent):
         """Initializes the policy vector, state-action matrix, and returns
         matrix.
 
-        # TODO: Some states will never be reached, and can be removed.
+        # TODO:
+            - Some states will never be reached, and they can be removed.
+            - Consider employing some form of early stopping
 
         Args:
             action_space: Discrete action space (Hit or Stay).
