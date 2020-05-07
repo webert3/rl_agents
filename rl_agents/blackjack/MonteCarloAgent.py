@@ -22,6 +22,8 @@ class MonteCarloAgent(IBaseAgent):
 
         # TODO:
             - Some states will never be reached, and they can be removed.
+                - Write a function that maps environment signals to their
+                appropriate index in the table.
             - Consider employing some form of early stopping
 
         Args:
@@ -35,6 +37,10 @@ class MonteCarloAgent(IBaseAgent):
         self.discount_factor = discount_factor
         self.rand_generator = np.random.RandomState(seed=seed)
         self.actions = np.arange(action_space.n)
+
+        player_score_states = obs_space[0].n
+        dealer_card_states = obs_space[1].n
+        has_usable_ace = obs_space[2].n
 
         self.policy = np.ones(shape=(obs_space[0].n,  # Player's score
                                      obs_space[1].n,  # Dealers's Card
